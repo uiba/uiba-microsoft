@@ -52,7 +52,7 @@ Microsoft.requestCredential = function(options, credentialRequestCompleteCallbac
    * We use state to roundtrip a random token to help protect against CSRF (boilerplate)
    */
     var redirectUri = Meteor.absoluteUrl() + "_oauth/microsoft";
-    console.log("redirectUri", redirectUri);
+    
     const loginUrl = 'https://login.microsoftonline.com/' +
       config.tenantID +
       '/oauth2/v2.0/authorize' +

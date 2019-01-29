@@ -68,7 +68,6 @@ OAuth.registerService('microsoft', 2, null, function(query) {
   // );
   // const identity = {};
   const identity = getAccount(config, accessToken);
-  console.log("microsoft_server.js identity", identity)
 
   /**
    * Build our serviceData object. This needs to contain
