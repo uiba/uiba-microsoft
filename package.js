@@ -1,6 +1,6 @@
 Package.describe({
-  name: 'uiba:microsoft',
-  version: '0.0.1',
+  name: 'uibalabs:microsoft',
+  version: '1.0.0',
   // Brief, one-line summary of the package.
   summary: 'An implementation of the Microsoft OAuth 2.0 login service.',
   // URL to the Git repository containing the source code for this package.
@@ -11,7 +11,7 @@ Package.describe({
 });
 
 Package.onUse(function(api) {
-  api.versionsFrom('1.6.1.1');
+  api.versionsFrom('1.2.1');
   api.use('ecmascript');
 
   api.use('accounts-ui', ['client', 'server']);
@@ -34,6 +34,6 @@ Package.onUse(function(api) {
 Package.onTest(function(api) {
   api.use('ecmascript');
   api.use('tinytest');
-  api.use('uiba:microsoft');
+  api.use('uibalabs:microsoft@1.0.0');
   api.mainModule('microsoft-tests.js');
 });
