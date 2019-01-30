@@ -1,4 +1,5 @@
 'use strict';
+import { atob } from 'atob';
 
 /**
  * Define the base object namespace. By convention we use the service name
@@ -48,12 +49,13 @@ OAuth.registerService('microsoft', 2, null, function(query) {
    * Note that the username comes from from this request in Microsoft.
    */
   // console.log("microsoft_server.js config", config);
-
   const response = getTokens(config, query);
   const accessToken = response.accessToken;
   const refreshToken = response.refreshToken;
   const username = response.username;
-  // console.log("response", response);
+  const idToken = response.idToken;
+
+  var id_token_object = parseJwt(idToken);
 
   /**
    * If we got here, we can now request data from the account endpoints
@@ -92,6 +94,12 @@ OAuth.registerService('microsoft', 2, null, function(query) {
    * the initial profile object with the username.
    */
 
+  // Add id_token to service data
+  serviceData.id_token = id_token_object;
+
+  // Set email attribute to simplify coherence with other external services.
+  serviceData.email = serviceData.mail || serviceData.userPrincipalName;
+
   return {
     serviceData: serviceData,
     options: {
@@ -125,7 +133,6 @@ OAuth.registerService('microsoft', 2, null, function(query) {
  */
 const getTokens = function(config, query) {
 
-  const endpoint = `https://login.microsoftonline.com/${config.tenantID}/oauth2/token`
 
   /**
    * Attempt the exchange of code for token
@@ -133,17 +140,51 @@ const getTokens = function(config, query) {
   const redirectUri = Meteor.absoluteUrl() + '_oauth/microsoft';
   let response;
   try {
-    response = HTTP.post(
-      endpoint, {
-        params: {
-          code: query.code,
-          client_id: config.clientID,
-          client_secret: OAuth.openSecret(config.secret),
-          grant_type: 'authorization_code',
-          redirect_uri: redirectUri,
-          resource: 'https://graph.microsoft.com/'
-        }
-      });
+    var params = {};
+    if ( config.tenantID === 'common') {
+      // If using common sing in method, we need to use the OAUTH v2.0 endpoint
+      // since the v1.0 does not allow non-organization sign-in.
+      const endpoint = `https://login.microsoftonline.com/${config.tenantID}/oauth2/v2.0/token`
+
+      params = {
+        code: query.code,
+        client_id: config.clientID,
+        scope: config.graphScopes,
+        client_secret: OAuth.openSecret(config.secret),
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri
+        // ,
+        // resource: 'https://graph.microsoft.com/'
+      }
+
+      headers = {
+        "Content-Type": "application/json"
+      }
+
+      response = HTTP.post(
+        endpoint, {
+          // headers: headers,
+          params: params
+        });
+
+    } else {
+
+      const endpoint = `https://login.microsoftonline.com/${config.tenantID}/oauth2/token`
+      params = {
+        code: query.code,
+        client_id: config.clientID,
+        client_secret: OAuth.openSecret(config.secret),
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+        resource: 'https://graph.microsoft.com/'
+      }
+
+      response = HTTP.post(
+        endpoint, {
+          params: params
+        });
+    }
+
   } catch (err) {
     throw _.extend(new Error(`Failed to complete OAuth handshake with Microsoft. ${err.message}`), {
       response: err.response
@@ -169,6 +210,7 @@ const getTokens = function(config, query) {
      * Return an appropriately constructed object
      */
     return {
+      idToken: response.data.id_token,
       accessToken: response.data.access_token,
       refreshToken: response.data.refresh_token,
       expiresIn: response.data.expires_in,
@@ -275,3 +317,20 @@ const getSettings = function(config, username, accessToken) {
     });
   }
 };
+
+/**
+parseJwt parses a JWT format token and returns an Javascript object.
+@param { String }  token   a JWT token
+@return { Object }
+*/
+
+const parseJwt = function(token) {
+  /*
+  Source: https://stackoverflow.com/questions/38552003/how-to-decode-jwt-token-in-javascript
+  by Github user's Peheje https://stackoverflow.com/users/2781524/peheje
+  and Racing Tadpole
+  */
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace('-', '+').replace('_', '/');
+            return JSON.parse(atob(base64));
+        };

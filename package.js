@@ -20,6 +20,9 @@ Package.onUse(function(api) {
   api.use('http', ['server']);
   api.use(['underscore', 'service-configuration'], ['client', 'server']);
   api.use(['random', 'templating'], 'client');
+  Npm.depends({
+    "atob": "2.1.2"
+  });
 
   api.export('Microsoft');
 
