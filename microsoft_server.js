@@ -169,14 +169,15 @@ const getTokens = function(config, query) {
 
     } else {
 
-      const endpoint = `https://login.microsoftonline.com/${config.tenantID}/oauth2/token`
+      const endpoint = `https://login.microsoftonline.com/${config.tenantID}/oauth2/v2.0/token`
       params = {
         code: query.code,
         client_id: config.clientID,
         client_secret: OAuth.openSecret(config.secret),
         grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-        resource: 'https://graph.microsoft.com/'
+        redirect_uri: redirectUri
+        // ,
+        // resource: 'https://graph.microsoft.com/'
       }
 
       response = HTTP.post(
